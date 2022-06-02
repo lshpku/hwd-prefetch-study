@@ -67,7 +67,7 @@ class CoherenceManagerWrapper(params: CoherenceManagerWrapperParams, context: Ha
   private def banked(node: TLOutwardNode): TLOutwardNode =
     if (params.nBanks == 0) node else { TLTempNode() :=* BankBinder(params.nBanks, params.blockBytes) :*= node }
 
-  val outwardNode = TLDChanDelayer(50) :=* banked(tempOut)
+  val outwardNode = TLDChanDelayer(100) :=* banked(tempOut)
 }
 
 object CoherenceManagerWrapper {
@@ -120,19 +120,12 @@ class Delayer[T <: Data](gen: T, delay: Int)(implicit p: Parameters) extends Mod
 
   val aging = RegInit(0.U((delay - 1).W))
   val tokens = RegInit(0.U(log2Ceil(delay + 1).W))
-  println("delay", delay)
-  println("log2Ceil(delay + 1)", log2Ceil(delay + 1))
-  println("tokens.getWidth", tokens.getWidth)
-  val nextAging = WireInit(aging)
-  val nextTokens = WireInit(tokens)
   val queue = Module(new Queue(new DebugData, delay))
-  nextAging := aging << 1
+  aging := aging << 1
   when (aging(delay - 2) === 1.U) {
-    assert (tokens < delay.U)
-    nextTokens := tokens + 1.U
+    assert (tokens < delay.U, "Tokens overflow")
+    tokens := tokens + 1.U
   }
-
-  printf("{cycle:%d,aging:0b%b,tokens:%d}\n", cycle, aging, tokens)
 
   // enqueue logic
   io.enq.ready := queue.io.enq.ready
@@ -140,7 +133,7 @@ class Delayer[T <: Data](gen: T, delay: Int)(implicit p: Parameters) extends Mod
   queue.io.enq.bits.data := io.enq.bits
   queue.io.enq.bits.debug_id := debug_id
   when (io.enq.fire) {
-    nextAging := (aging << 1).asUInt | 1.U
+    aging := (aging << 1).asUInt | 1.U
     when (debug_id =/= delay.U) {
       debug_id := debug_id + 1.U
     } .otherwise {
@@ -158,20 +151,15 @@ class Delayer[T <: Data](gen: T, delay: Int)(implicit p: Parameters) extends Mod
     queue.io.deq.ready := io.deq.ready
     when (io.deq.fire) {
       when (aging(delay - 2) === 0.U) {
-        nextTokens := tokens - 1.U
+        tokens := tokens - 1.U
       } .otherwise {
-        nextTokens := tokens
+        tokens := tokens
       }
       printf("{cycle:%d,deq:%d}\n", cycle, queue.io.deq.bits.debug_id)
     }
   }
 
-  aging := nextAging
-  tokens := nextTokens
-
-  when (queue.io.deq.valid && tokens === 0.U && aging === 0.U) {
-    //printf("{cycle:%d,wait:1}\n", cycle)
-  }
+  assert (!(queue.io.deq.valid && tokens === 0.U && aging === 0.U), "Tokens leaked")
 }
 
 class TLDChanDelayer(delay: Int)(implicit p: Parameters) extends LazyModule
