@@ -67,7 +67,7 @@ class CoherenceManagerWrapper(params: CoherenceManagerWrapperParams, context: Ha
   private def banked(node: TLOutwardNode): TLOutwardNode =
     if (params.nBanks == 0) node else { TLTempNode() :=* BankBinder(params.nBanks, params.blockBytes) :*= node }
 
-  val outwardNode = TLDChanDelayer(100) :=* banked(tempOut)
+  val outwardNode = TLBuffer(BufferParams.none, DelayerParams(150)) :=* banked(tempOut)
 }
 
 object CoherenceManagerWrapper {
@@ -104,7 +104,7 @@ object CoherenceManagerWrapper {
   }
 }
 
-class Delayer[T <: Data](gen: T, delay: Int)(implicit p: Parameters) extends Module {
+class TokenDelayer[T <: Data](gen: T, delay: Int) extends Module {
   val io = IO(new Bundle {
     val enq = Flipped(Decoupled(gen))
     val deq = Decoupled(gen)
@@ -162,42 +162,23 @@ class Delayer[T <: Data](gen: T, delay: Int)(implicit p: Parameters) extends Mod
   assert (!(queue.io.deq.valid && tokens === 0.U && aging === 0.U), "Tokens leaked")
 }
 
-class TLDChanDelayer(delay: Int)(implicit p: Parameters) extends LazyModule
-{
-  import Chisel._
-
-  val a = BufferParams.none
-  val d = BufferParams(delay)
-  val node = new TLBufferNode(a, a, a, d, a)
-
-  lazy val module = new LazyModuleImp(this) {
-    (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
-      out.a <> in.a
-      val delayer = Module(new Delayer(new TLBundleD(edgeOut.bundle), delay))
-      delayer.io.enq <> out.d
-      in .d <> delayer.io.deq
-
-      if (edgeOut.manager.anySupportAcquireB && edgeOut.client.anySupportProbe) {
-        println("node requires bce")
-        in.b <> out.b
-        out.c <> in.c
-        out.e <> in.e
-      } else {
-        println("node doesn't require bce")
-        in.b.valid := false.B
-        in.c.ready := true.B
-        in.e.ready := true.B
-        out.b.ready := true.B
-        out.c.valid := false.B
-        out.e.valid := false.B
-      }
+class DelayerParams(delay: Int) extends BufferParams(delay, false, false) {
+  require (delay >= 0, "Delay must be >= 0")
+  override def apply[T <: Data](x: DecoupledIO[T]): DecoupledIO[T] = {
+    if (delay > 1) {
+      val delayer = Module(new TokenDelayer(chiselTypeOf(x.bits), delay))
+      println("TokenDelayer", delay)
+      delayer.io.enq <> x
+      delayer.io.deq
+    } else if (delay > 0) {
+      Queue(x)
+    } else {
+      x
     }
   }
 }
 
-object TLDChanDelayer {
-  def apply(delay: Int)(implicit p: Parameters): TLNode = {
-    val buffer = LazyModule(new TLDChanDelayer(delay))
-    buffer.node
-  }
+object DelayerParams
+{
+  def apply(delay: Int): DelayerParams = new DelayerParams(delay)
 }
