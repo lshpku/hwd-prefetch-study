@@ -1,0 +1,3 @@
+[submodule "sifive-cache"]
+	path = sifive-cache
+	url = git@github.com:lshpku/sifive-inclusivecache-prefetch.git
