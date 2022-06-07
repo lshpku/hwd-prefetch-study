@@ -67,7 +67,7 @@ class CoherenceManagerWrapper(params: CoherenceManagerWrapperParams, context: Ha
   private def banked(node: TLOutwardNode): TLOutwardNode =
     if (params.nBanks == 0) node else { TLTempNode() :=* BankBinder(params.nBanks, params.blockBytes) :*= node }
 
-  val outwardNode = TLBuffer(BufferParams.none, DelayerParams(150)) :=* banked(tempOut)
+  val outwardNode = TLBuffer(BufferParams.none, DelayerParams(100, 8)) :=* banked(tempOut)
 }
 
 object CoherenceManagerWrapper {
@@ -104,7 +104,7 @@ object CoherenceManagerWrapper {
   }
 }
 
-class TokenDelayer[T <: Data](gen: T, delay: Int) extends Module {
+class TokenDelayer[T <: Data](gen: T, delay: Int, entries: Int) extends Module {
   val io = IO(new Bundle {
     val enq = Flipped(Decoupled(gen))
     val deq = Decoupled(gen)
@@ -119,11 +119,11 @@ class TokenDelayer[T <: Data](gen: T, delay: Int) extends Module {
   val cycle = freechips.rocketchip.util.WideCounter(32).value
 
   val aging = RegInit(0.U((delay - 1).W))
-  val tokens = RegInit(0.U(log2Ceil(delay + 1).W))
-  val queue = Module(new Queue(new DebugData, delay))
+  val tokens = RegInit(0.U(log2Ceil(entries + 1).W))
+  val queue = Module(new Queue(new DebugData, entries))
   aging := aging << 1
   when (aging(delay - 2) === 1.U) {
-    assert (tokens < delay.U, "Tokens overflow")
+    assert (tokens < entries.U, "Tokens overflow")
     tokens := tokens + 1.U
   }
 
@@ -162,12 +162,12 @@ class TokenDelayer[T <: Data](gen: T, delay: Int) extends Module {
   assert (!(queue.io.deq.valid && tokens === 0.U && aging === 0.U), "Tokens leaked")
 }
 
-class DelayerParams(delay: Int) extends BufferParams(delay, false, false) {
+class DelayerParams(delay: Int, entries: Int) extends BufferParams(delay, false, false) {
   require (delay >= 0, "Delay must be >= 0")
   override def apply[T <: Data](x: DecoupledIO[T]): DecoupledIO[T] = {
     if (delay > 1) {
-      val delayer = Module(new TokenDelayer(chiselTypeOf(x.bits), delay))
-      println("TokenDelayer", delay)
+      val delayer = Module(new TokenDelayer(chiselTypeOf(x.bits), delay, entries))
+      println("TokenDelayer", delay, entries)
       delayer.io.enq <> x
       delayer.io.deq
     } else if (delay > 0) {
@@ -180,5 +180,6 @@ class DelayerParams(delay: Int) extends BufferParams(delay, false, false) {
 
 object DelayerParams
 {
-  def apply(delay: Int): DelayerParams = new DelayerParams(delay)
+  def apply(delay: Int): DelayerParams = apply(delay, delay)
+  def apply(delay: Int, entries: Int): DelayerParams = new DelayerParams(delay, entries)
 }
