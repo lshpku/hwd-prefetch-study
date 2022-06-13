@@ -1,26 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include "util.h"
 
 #define MIN_N 1024
 #define MAX_N (16 * 1024 * 1024)
 #define STEP 64
 #define EXPECTED_ACCESS 10000000 // 1M
 
-inline uint64_t getcycle()
-{
-    uint64_t cycle;
-    asm volatile("rdcycle %0"
-                 : "=r"(cycle));
-    return cycle;
-}
-
 static void testloop(void *a, int n)
 {
     for (int i = 0; i < n; i += STEP) {
-        asm volatile(""
-                     :
-                     : "r"(*(volatile long *)(a + i)));
+        load(a + i);
     }
 }
 
@@ -32,10 +22,10 @@ static void test(void *a, int n)
     int loop = (long)EXPECTED_ACCESS * STEP / n;
     if (loop < 1)
         loop = 1;
-    uint64_t cycle0 = getcycle();
+    uint64_t cycle0 = get_cycle();
     for (int i = 0; i < loop; i++)
         testloop(a, n);
-    uint64_t cycle1 = getcycle();
+    uint64_t cycle1 = get_cycle();
 
     uint64_t cycle = (cycle1 - cycle0) & ((1ULL << 40) - 1);
     printf("{\"loop\":%d,\"n\":%d,\"cycle\":%llu}\n", loop, n, cycle);
