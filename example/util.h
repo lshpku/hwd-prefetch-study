@@ -10,16 +10,6 @@ inline uint64_t get_cycle()
 
 #define DONT_TOUCH(a) asm volatile("" ::"r"(a))
 
-inline void load(void *ptr)
-{
-    DONT_TOUCH(*(volatile long *)ptr);
-}
-
-inline void store(void *ptr)
-{
-    *(volatile long *)ptr = 0;
-}
-
 #define L2CTL_BASE 0x2010000
 
 typedef struct {
@@ -27,11 +17,6 @@ typedef struct {
     uint64_t trainHits;
     uint64_t preds;
     uint64_t predGrants;
-    uint64_t cacheables;
-    uint64_t enables;
-    uint64_t predValids;
-    uint64_t clocks;
-    uint64_t missAddr;
 } l2perf_t;
 
 typedef struct {
@@ -54,7 +39,7 @@ typedef struct {
     struct {
         uint64_t read;
         uint64_t write;
-        uint64_t enable;
+        uint64_t nextN;
     } prefetch;
     char _pad3[488];
 

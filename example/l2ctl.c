@@ -83,8 +83,8 @@ int main(int argc, char **argv)
 
     switch (command_e) {
     case COMMAND_ON:
-        l2ctl->prefetch.enable = 1;
-        if (!l2ctl->prefetch.enable) {
+        l2ctl->prefetch.nextN = 1;
+        if (!l2ctl->prefetch.nextN) {
             fprintf(stderr, "Failed to turn on prefetch\n");
             exit(-1);
         }
@@ -92,8 +92,8 @@ int main(int argc, char **argv)
         break;
 
     case COMMAND_OFF:
-        l2ctl->prefetch.enable = 0;
-        if (l2ctl->prefetch.enable) {
+        l2ctl->prefetch.nextN = 0;
+        if (l2ctl->prefetch.nextN) {
             fprintf(stderr, "Failed to turn off prefetch\n");
             exit(-1);
         }
@@ -108,16 +108,11 @@ int main(int argc, char **argv)
         break;
 
     case COMMAND_STATUS:
-        printf("prefetch  : %s\n", l2ctl->prefetch.enable ? "on" : "off");
+        printf("prefetch  : %llu\n", l2ctl->prefetch.nextN);
         printf("trains    : %llu\n", l2ctl->perf.trains);
         printf("trainHits : %llu\n", l2ctl->perf.trainHits);
         printf("preds     : %llu\n", l2ctl->perf.preds);
         printf("predGrants: %llu\n", l2ctl->perf.predGrants);
-        printf("cacheables: %llu\n", l2ctl->perf.cacheables);
-        printf("enables   : %llu\n", l2ctl->perf.enables);
-        printf("predValids: %llu\n", l2ctl->perf.predValids);
-        printf("clocks    : %llu\n", l2ctl->perf.clocks);
-        printf("missAddr  : 0x%llx\n", l2ctl->perf.missAddr);
         break;
     }
 }
