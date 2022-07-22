@@ -39,9 +39,11 @@ typedef struct {
     struct {
         uint64_t read;
         uint64_t write;
-        uint64_t nextN;
+        uint64_t sel;
+        char _pad[40];
+        uint64_t args[4];
     } prefetch;
-    char _pad3[488];
+    char _pad3[416];
 
     // 0x600
     l2perf_t perf;
