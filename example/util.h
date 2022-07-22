@@ -15,6 +15,7 @@ inline uint64_t get_cycle()
 typedef struct {
     uint64_t trains;
     uint64_t trainHits;
+    uint64_t trainLates;
     uint64_t preds;
     uint64_t predGrants;
 } l2perf_t;
