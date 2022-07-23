@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "util.h"
 
-#define LINE_SIZE 64
+#define LINE_SIZE 16
 #define ARRAY_BASE 0x88000000
 #define PERM_SIZE 16
 
@@ -24,7 +24,7 @@ int main()
 
     for (int sel = 0; sel < 12; sel++) {
         l2ctl->prefetch.sel = sel % 3;
-        l2ctl->prefetch.args[0] = ((sel / 3) + 1) * 4;
+        l2ctl->prefetch.args[0] = 1;
 
         l2perf_t perf0 = l2ctl->perf;
         uint64_t cycle0 = get_cycle();
@@ -50,6 +50,7 @@ int main()
         printf("cycle: %llu\n", (cycle1 - cycle0) & ((1ULL << 40) - 1));
         printf("trains    : %llu\n", perf1.trains - perf0.trains);
         printf("trainHits : %llu\n", perf1.trainHits - perf0.trainHits);
+        printf("trainLates: %llu\n", perf1.trainLates - perf0.trainLates);
         printf("preds     : %llu\n", perf1.preds - perf0.preds);
         printf("predGrants: %llu\n", perf1.predGrants - perf0.predGrants);
     }
