@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -8,12 +9,13 @@
 #include "util.h"
 
 const char usage[] =
-    "usage: l2ctl [-h] command\n";
+    "usage: l2ctl [-h] command [arg ...]\n";
 const char help[] =
     "Commands:\n"
     "  off      turn off prefetching\n"
     "  on       use the Next Line Prefetcher\n"
     "  bop      use the Best Offset Prefetcher\n"
+    "  spp      use the Signature Path Prefetcher\n"
     "  config   show l2 config\n"
     "  status   show l2 status\n";
 
@@ -22,9 +24,26 @@ const char help[] =
 #define COMMAND_CONFIG 3
 #define COMMAND_STATUS 4
 #define COMMAND_BOP 5
+#define COMMAND_SPP 6
 
 #define IS_COMMAND(s, c) \
     else if (!strcmp(command, s)) { command_e = c; }
+
+void use_prefetcher(volatile l2ctl_t *l2ctl, int sel, int argc, char **argv,
+                    const char *name)
+{
+    l2ctl->prefetch.sel = 0;
+    printf("use the %s with args (", name);
+    for (int i = 0; i < argc; i++) {
+        uint64_t arg = atoll(argv[i]);
+        l2ctl->prefetch.args[i] = arg;
+        if (i)
+            printf(", ");
+        printf("%llu", arg);
+    }
+    printf(")\n");
+    l2ctl->prefetch.sel = sel;
+}
 
 int main(int argc, char **argv)
 {
@@ -47,10 +66,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "%sMissing command\n", usage);
         exit(-1);
     }
-    if (optind + 1 != argc) {
-        fprintf(stderr, "%sRequire exactly one command\n", usage);
-        exit(-1);
-    }
 
     char *command = argv[optind++];
     int command_e;
@@ -59,6 +74,7 @@ int main(int argc, char **argv)
     IS_COMMAND("on", COMMAND_ON)
     IS_COMMAND("off", COMMAND_OFF)
     IS_COMMAND("bop", COMMAND_BOP)
+    IS_COMMAND("spp", COMMAND_SPP)
     IS_COMMAND("config", COMMAND_CONFIG)
     IS_COMMAND("status", COMMAND_STATUS)
     else
@@ -82,23 +98,24 @@ int main(int argc, char **argv)
     }
     close(memfd);
 
-    volatile l2ctl_t *const l2ctl = p;
+    volatile l2ctl_t *l2ctl = p;
 
     switch (command_e) {
     case COMMAND_OFF:
         l2ctl->prefetch.sel = 0;
         printf("prefetch off\n");
         break;
-
     case COMMAND_ON:
-        l2ctl->prefetch.sel = 1;
-        l2ctl->prefetch.args[0] = 1;
-        printf("use the Next Line Prefetcher\n");
+        use_prefetcher(l2ctl, 1, argc - optind, argv + optind,
+                       "Next Line Prefetcher");
         break;
-
     case COMMAND_BOP:
-        l2ctl->prefetch.sel = 2;
-        printf("use the Best Offset Prefetcher\n");
+        use_prefetcher(l2ctl, 2, argc - optind, argv + optind,
+                       "Best Offset Prefetcher");
+        break;
+    case COMMAND_SPP:
+        use_prefetcher(l2ctl, 3, argc - optind, argv + optind,
+                       "Signature Path Prefetcher");
         break;
 
     case COMMAND_CONFIG:
@@ -110,11 +127,12 @@ int main(int argc, char **argv)
 
     case COMMAND_STATUS:
         printf("sel  : %llu\n", l2ctl->prefetch.sel);
-        printf("trains    : %llu\n", l2ctl->perf.trains);
-        printf("trainHits : %llu\n", l2ctl->perf.trainHits);
-        printf("trainLates: %llu\n", l2ctl->perf.trainLates);
-        printf("preds     : %llu\n", l2ctl->perf.preds);
-        printf("predGrants: %llu\n", l2ctl->perf.predGrants);
+        printf("train    : %llu\n", l2ctl->perf.train);
+        printf("trainHit : %llu\n", l2ctl->perf.trainHit);
+        printf("trainMiss: %llu\n", l2ctl->perf.trainMiss);
+        printf("trainLate: %llu\n", l2ctl->perf.trainLate);
+        printf("pred     : %llu\n", l2ctl->perf.pred);
+        printf("predGrant: %llu\n", l2ctl->perf.predGrant);
         break;
     }
 }

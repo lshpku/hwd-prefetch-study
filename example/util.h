@@ -13,11 +13,12 @@ inline uint64_t get_cycle()
 #define L2CTL_BASE 0x2010000
 
 typedef struct {
-    uint64_t trains;
-    uint64_t trainHits;
-    uint64_t trainLates;
-    uint64_t preds;
-    uint64_t predGrants;
+    uint64_t train;
+    uint64_t trainHit;
+    uint64_t trainMiss;
+    uint64_t trainLate;
+    uint64_t pred;
+    uint64_t predGrant;
 } l2perf_t;
 
 typedef struct {
