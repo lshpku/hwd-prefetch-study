@@ -23,7 +23,7 @@ int main()
     volatile l2ctl_t *l2ctl = (void *)L2CTL_BASE;
 
     for (int sel = 0; sel < 12; sel++) {
-        l2ctl->prefetch.sel = sel % 3;
+        l2ctl->prefetch.sel = sel % 4;
         l2ctl->prefetch.args[0] = 1;
 
         l2perf_t perf0 = l2ctl->perf;
@@ -48,10 +48,11 @@ int main()
         printf("--------------------\n");
         printf("prefetch.sel: %llu\n", l2ctl->prefetch.sel);
         printf("cycle: %llu\n", (cycle1 - cycle0) & ((1ULL << 40) - 1));
-        printf("trains    : %llu\n", perf1.trains - perf0.trains);
-        printf("trainHits : %llu\n", perf1.trainHits - perf0.trainHits);
-        printf("trainLates: %llu\n", perf1.trainLates - perf0.trainLates);
-        printf("preds     : %llu\n", perf1.preds - perf0.preds);
-        printf("predGrants: %llu\n", perf1.predGrants - perf0.predGrants);
+        printf("trains   : %llu\n", perf1.train - perf0.train);
+        printf("trainHit : %llu\n", perf1.trainHit - perf0.trainHit);
+        printf("trainMiss: %llu\n", perf1.trainMiss - perf0.trainMiss);
+        printf("trainLate: %llu\n", perf1.trainLate - perf0.trainLate);
+        printf("preds    : %llu\n", perf1.pred - perf0.pred);
+        printf("predGrant: %llu\n", perf1.predGrant - perf0.predGrant);
     }
 }
