@@ -1,16 +1,24 @@
-L2 Project
-===
+# HWD Prefetch Study
+基于SiFive Inclusive Cache的硬件数据预取综合研究
 
-这是我在SiFive Inclusive Cache（L2）上做实验存放测试文件的仓库
+#### 项目内容
+* 阅读Chipyard源码，写了内容详尽的[Chipyard代码导读]()
+* 在SiFive Inclusive Cache上实现了通用的预取框架，并且提供可以运行时配置的MMIO接口和性能计数器
+* 正确实现了3个经典的预取器：Next-Line，BOP，SPP
+* 使用SPEC2006进行性能评测，并分析了预取的准确率、覆盖率、及时性等指标
 
 ## 使用方法
 
-### 在Memory Bus和L2之间添加延迟
+### 增加访存延迟
+由于FPGA的核心频率较低（50M），甚至低于DDR3内存（800M），导致访存周期偏小，与真实处理器不符，所以需要人为增加延迟。
+
+我写了一个小模块，位于System Bus和L2 Cache之间，通过一个大小为8的buffer和一个宽度为100的shift register，高效地实现了100个周期的延迟。
+
 * 见`Makefile`，把`BankedL2Params.scala`映射到Chipyard镜像的
   ```text
   /root/chipyard/generators/rocket-chip/src/main/scala/subsystem/BankedL2Params.scala
   ```
-* 不需要改其他地方，然后`make`就可以了。
+* 不需要改其他地方，然后`make`就可以了
 
 ### 使用带预取功能的L2
 * 先把整个仓库完整clone下来
@@ -22,9 +30,10 @@ L2 Project
   ```text
   /root/chipyard/generators/sifive-cache/design
   ```
-* 不需要改其他地方，然后`make`就可以了。
+* 不需要改其他地方，然后`make`就可以了
 
 ### 测试访存延迟
+我提供了一个简单的随机访存的C程序，用于探究数组大小与平均访存延迟的关系；它会输出数组大小和总访存周期，你可以用Python脚本分析结果。
 * 编译
   ```bash
   $ riscv64-unknown-linux-gnu-gcc -Os -o test_latency example/test_latency.c
@@ -40,12 +49,12 @@ L2 Project
   ```
 
 ### L2CTL
-这是一个通过MMIO控制L2预取的小脚本
+我的预取器提供了直接内存控制（MMIO）接口，即可以通过修改某处**物理内存**的内容来选择预取器和设置参数。我提供了一个使用这个接口的C程序，它通过映射操作系统的`/dev/mem`文件访问物理内存，因此**需要root权限**。
 * 编译
   ```bash
   $ riscv64-unknown-linux-gnu-gcc -Os -o l2ctl example/l2ctl.c
   ```
-* 在FGPA上运行，**需要root权限**
+* 在FGPA上运行，请使用root或sudo
   ```bash
   $ l2ctl on        # 开启L2预取
   # prefetch on
@@ -56,10 +65,24 @@ L2 Project
   # ways      : 8
   # sets      : 1024
   # blockBytes: 64
-  $ l2ctl status    # 查看L2预取性能统计
+  $ l2ctl status    # 查看L2预取性能性能计数器
   # prefetch  : off
   # trains    : 1823464953
   # trainHits : 468795141
   # preds     : 1148053842
   # predGrants: 743084171
   ```
+
+## 实现原理
+
+### Chipyard
+
+### SiFive Inclusive Cache
+
+### 预取框架
+
+### 预取器
+#### Next-Line
+#### BOP
+#### SPP
+
