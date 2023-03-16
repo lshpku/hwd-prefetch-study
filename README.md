@@ -1,8 +1,8 @@
 # HWD Prefetch Study
 基于SiFive Inclusive Cache的硬件数据预取综合研究
 
-#### 项目内容
-* 阅读Chipyard源码，写了内容详尽的[Chipyard代码导读]()
+### 项目内容
+* 阅读Chipyard源码，写了内容详尽的[Chipyard代码导读](https://lshpku.github.io/hwd-prefetch-study/Chipyard代码导读.pdf)
 * 在SiFive Inclusive Cache上实现了通用的预取框架，并且提供可以运行时配置的MMIO接口和性能计数器
 * 正确实现了3个经典的预取器：Next-Line，BOP，SPP
 * 使用SPEC2006进行性能评测，并分析了预取的准确率、覆盖率、及时性等指标
@@ -10,9 +10,7 @@
 ## 使用方法
 
 ### 增加访存延迟
-由于FPGA的核心频率较低（50M），甚至低于DDR3内存（800M），导致访存周期偏小，与真实处理器不符，所以需要人为增加延迟。
-
-我写了一个小模块，位于System Bus和L2 Cache之间，通过一个大小为8的buffer和一个宽度为100的shift register，高效地实现了100个周期的延迟。
+由于FPGA的核心频率较低（50MHz），甚至低于DDR3内存（800MHz），导致访存周期数偏小，与真实处理器不符；为此我写了一个位于System Bus和L2 Cache之间的小模块，通过一个大小为8的buffer和一个宽度为100的shift register高效地实现了100个周期的延迟。
 
 * 见`Makefile`，把`BankedL2Params.scala`映射到Chipyard镜像的
   ```text
@@ -74,15 +72,14 @@
   ```
 
 ## 实现原理
+见[硬件数据预取.pdf](https://lshpku.github.io/hwd-prefetch-study/梁书豪-硬件数据预取.pdf)
 
-### Chipyard
-
-### SiFive Inclusive Cache
-
-### 预取框架
-
-### 预取器
-#### Next-Line
-#### BOP
-#### SPP
-
+## 实验结果
+### 加速比
+![speedup](https://lshpku.github.io/hwd-prefetch-study/speedup.svg)
+### 准确率
+![accuracy](https://lshpku.github.io/hwd-prefetch-study/accuracy.svg)
+### 覆盖率
+![coverage](https://lshpku.github.io/hwd-prefetch-study/coverage.svg)
+### 及时性
+![timeliness](https://lshpku.github.io/hwd-prefetch-study/timeliness.svg)
