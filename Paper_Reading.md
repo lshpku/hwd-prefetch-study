@@ -10,10 +10,15 @@
 * 预取不能消除miss，因为miss是Cache的固有属性，无法消除
 * 预取只是降低了miss的副作用之一——延迟，但仍然保留甚至加剧了miss的其他副作用，如功耗、带宽
 * <b>硬件数据预取：</b>使用非体系结构可见的方式，由硬件自动生成预取请求
+#### 图：预取在处理器体系结构中的位置
+<p align="center"><img src="https://lshpku.github.io/hwd-prefetch-study/tree01.svg" width="700"></p>
+
 ### 分类
 * <b>基于模式的：</b>假设访存的地址存在某种模式（Pattern），如空间（Spatial）局部性、时间（Temporal）局部性，那么只要在访存历史中识别出这一模式，就可以根据该模式推算接下来要访问的地址
 * <b>基于执行的：</b>不靠历史去推测，而是通过额外的线程（Helper-thread）或OOO处理器推测式执行的能力（Runahead），在主线程访存之前算出访存地址并预取，从而达到快主线程一步预取的效果
 * <b>基于特殊性质的：</b>针对特殊的访存，例如Pointer-chasing、散列表做预取；解决方法比较多元，融合了模式和执行的方法，故单独列为一类
+#### 图：硬件数据预取的分类
+<p align="center"><img src="https://lshpku.github.io/hwd-prefetch-study/tree02.svg" width="800"></p>
 
 ## Stream/Stride
 * **定义**

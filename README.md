@@ -73,7 +73,15 @@
   ```
 
 ## 实现原理
-见[硬件数据预取.pdf](https://lshpku.github.io/hwd-prefetch-study/梁书豪-硬件数据预取.pdf)
+### 预取框架部分
+此处为缩略图，详见[Chipyard代码导读](https://lshpku.github.io/hwd-prefetch-study/Chipyard代码导读.pdf)第7.3节
+![prefetch-framework-tbn](https://lshpku.github.io/hwd-prefetch-study/prefetch-framework-tbn.png)
+### 预取器部分
+此处为缩略图，详见[2022年秋季学期工作进展-硬件数据预取](https://lshpku.github.io/hwd-prefetch-study/梁书豪-硬件数据预取.pdf)第3章
+![prefetchers-tbn](https://lshpku.github.io/hwd-prefetch-study/prefetchers-tbn.png)
+### 论文对比部分
+此处为缩略图，详见[硬件数据预取论文阅读](Paper_Reading.md)
+![paper-reading-tbn](https://lshpku.github.io/hwd-prefetch-study/paper-reading-tbn.png)
 
 ## 实验结果
 ### 加速比
@@ -84,3 +92,11 @@
 ![coverage](https://lshpku.github.io/hwd-prefetch-study/coverage.svg)
 ### 及时性
 ![timeliness](https://lshpku.github.io/hwd-prefetch-study/timeliness.svg)
+### 结论
+* 预取可以真实提升处理器的性能
+* 对访存序列的有效建模是取得良好结果的前提
+  * 所谓建模，就是对访存序列的潜在规律的认识
+  * BOP和SPP的建模更加合理和周全，故效果比朴素的Next-Line好
+* 现有预取器在Coverage上还有很大提高空间
+  * 3个预取器的Coverage都是50%左右，即还有一半的miss没有被覆盖
+  * 虽说Accuracy和Timeliness也很重要，但是Coverage是可预测性的关键
