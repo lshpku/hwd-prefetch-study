@@ -2,7 +2,8 @@
 基于SiFive Inclusive Cache的硬件数据预取综合研究
 
 ### 项目内容
-* 阅读Chipyard源码，写了内容详尽的[Chipyard代码导读](https://lshpku.github.io/hwd-prefetch-study/Chipyard代码导读.pdf)
+* 阅读Chipyard源码，写了[Chipyard代码导读](https://lshpku.github.io/hwd-prefetch-study/Chipyard代码导读.pdf)
+* 阅读约100篇硬件数据预取相关论文，写了[硬件数据预取论文阅读](Paper_Reading.md)
 * 在SiFive Inclusive Cache上实现了通用的预取框架，并且提供可以运行时配置的MMIO接口和性能计数器
 * 正确实现了3个经典的预取器：Next-Line，BOP，SPP
 * 使用SPEC2006进行性能评测，并分析了预取的准确率、覆盖率、及时性等指标
