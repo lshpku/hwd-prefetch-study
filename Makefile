@@ -7,9 +7,8 @@ SCRIPT := $(BOOM_ROOT)/build/build.sh
 
 MOUNT += -v $(BOOM_ROOT)/src/main/scala:/root/chipyard/generators/boom/src/main/scala
 MOUNT += -v $(BOOM_ROOT)/build:/root/chipyard/sims/verilator/build
-MOUNT += -v $(BOOM_ROOT)/l2proj/sifive-cache/design:/root/chipyard/generators/sifive-cache/design
-MOUNT += -v $(BOOM_ROOT)/l2proj/AbstractConfig.scala:/root/chipyard/generators/chipyard/src/main/scala/config/AbstractConfig.scala
-MOUNT += -v $(BOOM_ROOT)/l2proj/BankedL2Params.scala:/root/chipyard/generators/rocket-chip/src/main/scala/subsystem/BankedL2Params.scala
+MOUNT += -v $(BOOM_ROOT)/hwd-prefetch-study/sifive-cache/design:/root/chipyard/generators/sifive-cache/design
+MOUNT += -v $(BOOM_ROOT)/hwd-prefetch-study/BankedL2Params.scala:/root/chipyard/generators/rocket-chip/src/main/scala/subsystem/BankedL2Params.scala
 
 CONFIG ?= MediumBoomConfig
 MAKE_VAR := VERILATOR_THREADS=8 JAVA_HEAP_SIZE=32G FIRRTL_LOGLEVEL=warn
@@ -22,6 +21,7 @@ CMD += cp simulator-* build/
 all: simulator-chipyard-$(CONFIG)
 
 simulator-chipyard-$(CONFIG):
+	mkdir -p $(shell dirname $(SCRIPT))
 	echo "#!/bin/bash" > $(SCRIPT)
 	chmod a+x $(SCRIPT)
 ifeq ($(shell podman ps -aq -f name=$(CONTAINER)),)
