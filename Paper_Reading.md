@@ -348,15 +348,23 @@
   * 提出一个可实现的在线的强化学习算法，输入程序运行时的特征（控制流、地址流等），输出预取的Delta（限一页，即±63之间）
   * 使用强化学习的原因是希望考虑多种因素，而不是像传统的预取方法一样只能考虑简单的Address序列
 
-## Cache Bypassing
+## Cache Bypassing/Level Prediction
 * **定义**
   * 现有多级Cache结构虽然可以较大程度地利用时间局部性（最近使用的块在Cache的上层），但多级Cache的hit time也会在整个访存延迟中占很大的部分
-  * Cache Bypassing通过预测数据的位置（在第几级Cache或内存），直接向对应的层发请求，跳过miss的层，节约在miss的层上查询的时间
+  * Cache Bypassing针对cache fill（load或writeback），可以跳过某些level不进行fill操作
+  * Level Prediction则针对load，通过预测数据的位置（在第几级Cache或内存），直接向对应的层发请求，跳过miss的层，节约在miss的层上查询的时间
 * **Reducing Load Latency with Cache Level Prediction** *HPCA’22*
-  * 白兔
+  * 传统的LP是每层都放一个Hit/miss predictor，需要很大的存储才能达到足够的精度，而且会被先进的预取器干扰
+  * 本文基于MissMap，使用一个统一的预测器，预测是否跳过L2/L3（不包括L1，因为L1和core的联系太紧密）
+    * LocMap：记录cache里面每个block的位置的表，存在内存里面；还有一个专门的metadata cache用来缓存，实际上访问LocMap都走cache
+    * Popular level predictor：当metadata cache失效时用，简单的计数器，可能同时预测多级都命中
+    * 错误恢复：仅当预测层比实际层低时；由于只在L2/L3上预测，所以可以统一用LLC的directory判断；新增一个transaction类型用来通知错误
+  * 用gem5做实验，benchmark有SPEC CPU 2017、GAPBS、NAS、其他（bmt, hpcg, stream-copy, and gups）
 * **Hermes: Accelerating Long-Latency Load Requests via Perceptron-Based Off-Chip Load Prediction** *MICRO’22*
   * 使用Perceptron的方法在L1处进行二元判断，是在任一级Cache上还是在内存上，如果在内存上就并行查询Cache和内存，否则只查Cache
-  * Perceptron的好处的预测能力很强，所以只用很小的存储空间，
+    * 由于同时查Cache和内存，最终数据还是经Cache返回，所以不需要错误处理
+  * 使用的特征：PC ^ cacheline offset、PC ^ byte offset、PC + first access、Cacheline offset + first access、最近的4个PC
+  * Perceptron的好处的预测能力很强，所以只用很小的存储空间
 
 ## Software Prefetching
 * **Classifying Memory Access Patterns for Prefetching** *ASPLOS’20*
@@ -370,3 +378,13 @@
   * 容易看出，Stride/Stream和Spatial预取顶多能处理Delta，一些Pointer专用预取器可以处理Indirect Delta和Index，其他只能交给不依赖Pattern的预取器，比如Temporal和Runahead
   * 剩下没分类的访存序列就更难处理了，所以硬件数据预取还有很多没有解决的问题
 * **APT-GET: Profile-Guided Timely Software Prefetching** *EuroSys'22*
+* **CRISP: Critical Slice Prefetching** *ASPLOS'22*
+  * 提出只要把关键的load提前调度就可以提升性能，不用runahead；用x86的一个指令前缀来提示调度器
+  * 如何决定关键的load：同时满足LLC miss率、出现率、MLP阈值；如何找load slice：在trace中反向搜索
+  * 只用硬件的问题：缺乏profiling信息，难找全slice；只用软件的问题：loop相关的load无法自动提前
+  * 基于现有的feedback-driven optimization框架，在tracing和post-compile optimization进行CRISP
+  * 还改了硬件的scheduler，现在硬件都不用纯age的调度器了，因为太复杂
+* **Lukewarm Serverless Functions: Characterization and Optimization** *ISCA'22*
+  * 发现在FaaS会出现一台机器上有很多函数的热实例，但是隔很久才运行一次的情况，导致要重新预热；发现预热的关键在于I-cache miss
+  * 用很暴力的方法，Record：记录下每个函数运行时的工作集，Replay：下次再运行的时候预取，需要硬件和OS协同
+  * 与Temporal预取的区别：预取到L2而不是L1，以page为单位，meta占空间小，使用虚拟地址
