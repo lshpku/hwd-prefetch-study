@@ -102,19 +102,19 @@ int main(int argc, char **argv)
 
     switch (command_e) {
     case COMMAND_OFF:
-        l2ctl->prefetch.sel = 0;
+        l2ctl->prefetch.sel = SEL_NONE;
         printf("prefetch off\n");
         break;
     case COMMAND_ON:
-        use_prefetcher(l2ctl, 1, argc - optind, argv + optind,
+        use_prefetcher(l2ctl, SEL_NEXTLINE, argc - optind, argv + optind,
                        "Next Line Prefetcher");
         break;
     case COMMAND_BOP:
-        use_prefetcher(l2ctl, 2, argc - optind, argv + optind,
+        use_prefetcher(l2ctl, SEL_BOP, argc - optind, argv + optind,
                        "Best Offset Prefetcher");
         break;
     case COMMAND_SPP:
-        use_prefetcher(l2ctl, 3, argc - optind, argv + optind,
+        use_prefetcher(l2ctl, SEL_SPP, argc - optind, argv + optind,
                        "Signature Path Prefetcher");
         break;
 

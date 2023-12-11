@@ -1,3 +1,5 @@
+#ifndef __EXAMPLE_UTIL_H__
+#define __EXAMPLE_UTIL_H__
 #include <stdint.h>
 
 inline uint64_t get_cycle()
@@ -11,6 +13,11 @@ inline uint64_t get_cycle()
 #define DONT_TOUCH(a) asm volatile("" ::"r"(a))
 
 #define L2CTL_BASE 0x2010000
+
+#define SEL_NONE 0
+#define SEL_NEXTLINE 1
+#define SEL_BOP 2
+#define SEL_SPP 3
 
 typedef struct {
     uint64_t train;
@@ -58,3 +65,5 @@ typedef struct {
         uint64_t cycle1 = get_cycle();              \
         printf("%s: %llu\n", msg, cycle1 - cycle0); \
     } while (0)
+
+#endif

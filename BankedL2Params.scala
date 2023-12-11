@@ -139,7 +139,6 @@ class TokenDelayer[T <: Data](gen: T, delay: Int, entries: Int) extends Module {
     } .otherwise {
       debug_id := 0.U
     }
-    printf("{cycle:%d,enq:%d}\n", cycle, debug_id)
   }
 
   // dequeue logic
@@ -155,7 +154,6 @@ class TokenDelayer[T <: Data](gen: T, delay: Int, entries: Int) extends Module {
       } .otherwise {
         tokens := tokens
       }
-      printf("{cycle:%d,deq:%d}\n", cycle, queue.io.deq.bits.debug_id)
     }
   }
 

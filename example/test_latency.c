@@ -1,51 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "util.h"
+#include <x86intrin.h>
 
-#define MIN_N 1024
-#define MAX_N (16 * 1024 * 1024)
-#define STEP 64
-#define EXPECTED_ACCESS 10000000 // 1M
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE (128 * 1024 * 1024)
+#endif
 
-static void testloop(void *a, int n)
-{
-    for (int i = 0; i < n; i += STEP) {
-        load(a + i);
+#define LINE_SIZE 64
+#define N (ARRAY_SIZE / sizeof(size_t))
+
+void loop(size_t *arr) {
+    volatile size_t *ptr = arr;
+    for (int i = 0; i < N; i++) {
+        ptr = (size_t *)*ptr;
     }
-}
-
-static void test(void *a, int n)
-{
-    for (int i = 0; i < 3; i++)
-        testloop(a, n);
-
-    int loop = (long)EXPECTED_ACCESS * STEP / n;
-    if (loop < 1)
-        loop = 1;
-    uint64_t cycle0 = get_cycle();
-    for (int i = 0; i < loop; i++)
-        testloop(a, n);
-    uint64_t cycle1 = get_cycle();
-
-    uint64_t cycle = (cycle1 - cycle0) & ((1ULL << 40) - 1);
-    printf("{\"loop\":%d,\"n\":%d,\"cycle\":%llu}\n", loop, n, cycle);
 }
 
 int main()
 {
-    void *a = calloc(MAX_N, 1);
+    size_t *arr = calloc(ARRAY_SIZE, 1);
 
-    printf("begin\n");
-
-    for (int n = MIN_N; n <= MAX_N; n *= 2) {
-        test(a, n);
-        if (n == MAX_N)
-            break;
-        if (n >= 4)
-            test(a, n + n / 4);
-        if (n >= 2)
-            test(a, n + n / 2);
-        if (n >= 4)
-            test(a, n + n * 3 / 4);
+    for (int i = 0; i < N; i++) {
+        arr[i] = (size_t)(arr + i);
     }
+
+    // random permutation
+    for (int i = 0; i < N; i++) {
+        int j = rand() % (N - i);
+        if (j > 0) {
+            size_t tmp = arr[i];
+            arr[i] = arr[i + j];
+            arr[i + j] = tmp;
+        }
+    }
+
+    int nloop = 128 * 1024 * 1024 / N;
+    if (nloop < 10) {
+        nloop = 10;
+    }
+    printf("LOOP = %d\n", nloop);
+
+    // warmup
+    for (int i = 0; i < 3; i++) {
+        loop(arr);
+    }
+
+    // access
+    uint64_t start = _rdtsc();
+    for (int i = 0; i < 10; i++) {
+        loop(arr);
+    }
+    uint64_t end = _rdtsc();
+    double cpi = (double)(end - start) / (N * 10);
+    printf("CPL = %f\n", cpi);
 }
